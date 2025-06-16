@@ -98,3 +98,33 @@ int main() {
 
     return 0;
 }
+
+
+//-------output------
+Enter rows and columns of Matrix A: 2
+2
+Enter elements (2x2):
+1
+2
+3
+4
+Enter rows and columns of Matrix B: 2
+2
+Enter elements (2x2):
+55
+7
+8
+9
+
+A + B =
+56 9 
+11 13 
+
+A - B =
+-54 -5 
+-5 -5 
+
+A * B =
+71 25 
+197 57 
+

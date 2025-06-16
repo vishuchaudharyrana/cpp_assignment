@@ -57,3 +57,9 @@ int main() {
 
     return 0;
 }
+
+//-----output------
+Dot product: 32
+Cross product: (-3, 6, -3)
+Normalized v1: (0.267261, 0.534522, 0.801784)
+

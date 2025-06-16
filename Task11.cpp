@@ -1,4 +1,4 @@
-### *CUDA Parallel Vector Addition*
+// *CUDA Parallel Vector Addition*
 // Step 1: Include necessary headers
 #include <iostream>
 #include <cuda_runtime.h>
@@ -71,4 +71,10 @@ int main() {
     return 0;
 }
 
+//------output------
+Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
+Compiling...
+Executing...
+Vector addition successful!
+Exit status: 0
 

@@ -46,3 +46,7 @@ int main() {
     std::cout << "Root: " << root << std::endl; // Output ~1.414
     return 0;
 }
+
+//---------output---------
+
+Root: 1.41421

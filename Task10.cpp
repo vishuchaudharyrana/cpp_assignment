@@ -22,3 +22,6 @@ int main() {
     std::cout << "Estimated Pi: " << estimate_pi(n) << std::endl;
     return 0;
 }
+
+//-----output-----
+Estimated Pi: 3.14101

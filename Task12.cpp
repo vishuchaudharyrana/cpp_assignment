@@ -1,5 +1,4 @@
-### *CUDA Parallel Matrix Transpose*
-cpp
+//*CUDA Parallel Matrix Transpose*
 // Step 1: Include necessary headers
 #include <iostream>
 #include <cuda_runtime.h>
@@ -92,4 +91,9 @@ int main() {
     return 0;
 }
 
-
+//-----output-----
+Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
+Compiling...
+Executing...
+Matrix transpose is correct!
+Exit status: 0

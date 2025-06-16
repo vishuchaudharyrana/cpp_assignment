@@ -30,3 +30,7 @@ int main() {
     std::cout << "Simpson: " << simpson(0, M_PI, 100) << std::endl;
     return 0;
 }
+
+//------output-------
+Trapezoidal: 1.99984
+Simpson: 2

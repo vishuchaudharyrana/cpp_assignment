@@ -64,3 +64,10 @@ int main() {
     return 0;
 }
  
+//------output------
+
+Value: Value: 4242
+Still accessible: 42
+
+Still accessible: 42
+

@@ -53,5 +53,11 @@ int main() {
 
     return 0;
 }
+//--------output------
+
+Mean: 3
+Median: 3
+Variance: 2
+Standard Deviation: 1.41421
 
 

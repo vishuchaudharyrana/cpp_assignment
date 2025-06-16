@@ -45,3 +45,12 @@ int main() {
     demoListOperations();
     return 0;
 }
+
+//--------output-------
+Initial list: 10 20 30 
+After push_back(40) and push_front(5): 5 10 20 30 40 
+After pop_back() and pop_front(): 10 20 30 
+After insert(15) at 2nd position: 10 15 20 30 
+After remove(20): 10 15 30 
+List in reverse: 30 15 10 
+

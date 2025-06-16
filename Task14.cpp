@@ -1,4 +1,4 @@
-### *CUDA Multithreaded Histogram Computation*
+//*CUDA Multithreaded Histogram Computation*
 cpp
 #include <iostream>
 #include <vector>
@@ -67,4 +67,11 @@ int main() {
 
     return 0;
 }
+
+//-----output-------
+Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
+Compiling...
+Executing...
+Histogram computation correctness: Valid
+Exit status: 0
 

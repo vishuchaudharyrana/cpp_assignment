@@ -89,10 +89,10 @@ int evaluate(const string& expr) {
 // ----------- Main Function with Test Cases -------------
 int main() {
     string expressions[] = {
-        "3 + 5",                      // Simple addition
-        "10 + 2 * 6",                 // Operator precedence
-        "100 * 2 + 12",               // Mix of * and +
-        "100 * (2 + 12)",             // Parentheses
+        "12 + 89",                      // Simple addition
+        "6 + 9 * 5",                 // Operator precedence
+        "10 * 4 + 63",               // Mix of * and +
+        "10000 * (20 + 129)",             // Parentheses
         "100 * (2 + 12) / 14",        // Full expression
         "(3 + 5) * (2 + (4 - 1))"     // Nested parentheses
     };
@@ -104,3 +104,24 @@ int main() {
 
     return 0;
 }
+
+//-------output-------
+
+Expression: 12 + 89
+Result: 101
+
+Expression: 6 + 9 * 5
+Result: 51
+
+Expression: 10 * 4 + 63
+Result: 103
+
+Expression: 10000 * (20 + 129)
+Result: 1490000
+
+Expression: 100 * (2 + 12) / 14
+Result: 100
+
+Expression: (3 + 5) * (2 + (4 - 1))
+Result: 40
+

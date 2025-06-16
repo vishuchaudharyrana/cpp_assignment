@@ -58,3 +58,8 @@ int main() {
 
     return 0;
 }
+
+//-------output-------
+
+Consumer 0 got task 0 from queue 0
+

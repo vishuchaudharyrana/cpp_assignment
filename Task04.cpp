@@ -53,3 +53,7 @@ int main() {
     for (auto val : data) std::cout << val << " ";
     return 0;
 }
+
+//--------output-------
+
+Sorted: 1 2 3 4 5 6 7 8 

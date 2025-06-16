@@ -1,5 +1,4 @@
 //*CUDA Multithreaded Histogram Computation*
-cpp
 #include <iostream>
 #include <vector>
 #include <cuda_runtime.h>

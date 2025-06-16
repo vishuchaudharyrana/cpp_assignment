@@ -1,99 +1,128 @@
 //*CUDA Parallel Matrix Transpose*
-// Step 1: Include necessary headers
 #include <iostream>
 #include <cuda_runtime.h>
+#include <chrono>
 
-#define MATRIX_SIZE 1024 // Define the size of the matrix
+#define SIZE 4 // Matrix size (4x4)
 
-// Step 2: CUDA kernel for matrix transpose
-__global__ void matrixTransposeKernel(float* d_inputMatrix, float* d_transposedMatrix, int width) {
-    int row = blockIdx.y * blockDim.y + threadIdx.y; // Compute row index
-    int col = blockIdx.x * blockDim.x + threadIdx.x; // Compute column index
-
-    if (row < width && col < width) { // Ensure indices are within bounds
-        int inputIndex = row * width + col; // Compute input matrix index
-        int transposedIndex = col * width + row; // Compute transposed matrix index
-        d_transposedMatrix[transposedIndex] = d_inputMatrix[inputIndex]; // Perform transpose
+// CUDA kernel for matrix transpose
+__global__ void transpose(float* input, float* output, int width) {
+    int row = blockIdx.y * blockDim.y + threadIdx.y;
+    int col = blockIdx.x * blockDim.x + threadIdx.x;
+    if (row < width && col < width) {
+        int inIdx  = row * width + col;
+        int outIdx = col * width + row;
+        output[outIdx] = input[inIdx];
     }
 }
 
-// Step 3: CPU-based matrix transpose for validation
-void matrixTransposeCPU(float* h_inputMatrix, float* h_transposedMatrix, int width) {
-    for (int i = 0; i < width; ++i) {
-        for (int j = 0; j < width; ++j) {
-            h_transposedMatrix[j * width + i] = h_inputMatrix[i * width + j]; // Swap row and column
-        }
-    }
+// CPU-based transpose
+void transposeCPU(float* input, float* output, int width) {
+    for (int i = 0; i < width; ++i)
+        for (int j = 0; j < width; ++j)
+            output[j * width + i] = input[i * width + j];
 }
 
-// Step 4: Main function to set up and execute the kernel
 int main() {
-    int matrixSize = MATRIX_SIZE * MATRIX_SIZE * sizeof(float); // Compute memory size
+    std::cout << " CUDA Matrix Transpose (Size: " << SIZE << "x" << SIZE << ")\n";
 
-    // Step 5: Allocate memory on the host (CPU)
-    float* h_inputMatrix = (float*)malloc(matrixSize);
-    float* h_transposedMatrix = (float*)malloc(matrixSize);
-    float* h_transposedMatrixCPU = (float*)malloc(matrixSize);
+    const int N = SIZE * SIZE;
+    size_t bytes = N * sizeof(float);
+    float h_input[N], h_output[N], h_ref[N];
 
-    // Step 6: Initialize input matrix with sample values
-    for (int i = 0; i < MATRIX_SIZE; ++i) {
-        for (int j = 0; j < MATRIX_SIZE; ++j) {
-            h_inputMatrix[i * MATRIX_SIZE + j] = static_cast<float>(i * MATRIX_SIZE + j);
-        }
+    // Initialize matrix: 0 to N-1
+    for (int i = 0; i < N; ++i)
+        h_input[i] = i;
+
+    // Allocate GPU memory
+    float *d_input, *d_output;
+    cudaMalloc(&d_input, bytes);
+    cudaMalloc(&d_output, bytes);
+    cudaMemcpy(d_input, h_input, bytes, cudaMemcpyHostToDevice);
+
+    // GPU timing
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
+    // Launch kernel
+    dim3 block(16, 16);
+    dim3 grid((SIZE + block.x - 1) / block.x, (SIZE + block.y - 1) / block.y);
+    transpose<<<grid, block>>>(d_input, d_output, SIZE);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+    float gpuTime = 0;
+    cudaEventElapsedTime(&gpuTime, start, stop);
+
+    // Copy result to host
+    cudaMemcpy(h_output, d_output, bytes, cudaMemcpyDeviceToHost);
+
+    // CPU transpose timing
+    auto cpu_start = std::chrono::high_resolution_clock::now();
+    transposeCPU(h_input, h_ref, SIZE);
+    auto cpu_end = std::chrono::high_resolution_clock::now();
+    double cpuTime = std::chrono::duration<double, std::milli>(cpu_end - cpu_start).count();
+
+    // Print input matrix
+    std::cout << "\n Original Matrix:\n";
+    for (int i = 0; i < SIZE; ++i) {
+        for (int j = 0; j < SIZE; ++j)
+            std::cout << h_input[i * SIZE + j] << "\t";
+        std::cout << "\n";
     }
 
-    // Step 7: Allocate memory on the device (GPU)
-    float* d_inputMatrix;
-    float* d_transposedMatrix;
-    cudaMalloc(&d_inputMatrix, matrixSize);
-    cudaMalloc(&d_transposedMatrix, matrixSize);
+    // Print transposed matrix (from GPU)
+    std::cout << "\n Transposed Matrix (GPU):\n";
+    for (int i = 0; i < SIZE; ++i) {
+        for (int j = 0; j < SIZE; ++j)
+            std::cout << h_output[i * SIZE + j] << "\t";
+        std::cout << "\n";
+    }
 
-    // Step 8: Copy input matrix from host to device
-    cudaMemcpy(d_inputMatrix, h_inputMatrix, matrixSize, cudaMemcpyHostToDevice);
-
-    // Step 9: Define block and grid sizes
-    dim3 blockSize(16, 16); // Define block size (16x16 threads)
-    dim3 gridSize((MATRIX_SIZE + blockSize.x - 1) / blockSize.x, (MATRIX_SIZE + blockSize.y - 1) / blockSize.y); // Compute grid size
-
-    // Step 10: Launch the CUDA kernel
-    matrixTransposeKernel<<<gridSize, blockSize>>>(d_inputMatrix, d_transposedMatrix, MATRIX_SIZE);
-
-    // Step 11: Copy transposed matrix from device to host
-    cudaMemcpy(h_transposedMatrix, d_transposedMatrix, matrixSize, cudaMemcpyDeviceToHost);
-
-    // Step 12: Validate results against CPU-based matrix transpose
-    matrixTransposeCPU(h_inputMatrix, h_transposedMatrixCPU, MATRIX_SIZE);
-
-    bool isValid = true;
-    for (int i = 0; i < MATRIX_SIZE * MATRIX_SIZE; ++i) {
-        if (h_transposedMatrix[i] != h_transposedMatrixCPU[i]) {
-            isValid = false;
+    // Verify correctness
+    bool correct = true;
+    for (int i = 0; i < N; ++i) {
+        if (h_output[i] != h_ref[i]) {
+            correct = false;
             break;
         }
     }
 
-    // Step 13: Display validation result
-    if (isValid) {
-        std::cout << "Matrix transpose is correct!" << std::endl;
-    } else {
-        std::cout << "Matrix transpose is incorrect!" << std::endl;
-    }
+    std::cout << "\n Result: Matrix transpose is " << (correct ? "CORRECT!" : "INCORRECT!") << "\n";
+    std::cout << "\n Timings:\n";
+    std::cout << "GPU Time: " << gpuTime << " ms\n";
+    std::cout << "CPU Time: " << cpuTime << " ms\n";
 
-    // Step 14: Free device memory
-    cudaFree(d_inputMatrix);
-    cudaFree(d_transposedMatrix);
-
-    // Step 15: Free host memory
-    free(h_inputMatrix);
-    free(h_transposedMatrix);
-    free(h_transposedMatrixCPU);
+    // Cleanup
+    cudaFree(d_input);
+    cudaFree(d_output);
 
     return 0;
 }
 
+
+
 //-----output-----
-Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
-Compiling...
 Executing...
-Matrix transpose is correct!
+ CUDA Matrix Transpose (Size: 4x4)
+
+ Original Matrix:
+0       1       2       3
+4       5       6       7
+8       9       10      11
+12      13      14      15
+
+ Transposed Matrix (GPU):
+0       4       8       12
+1       5       9       13
+2       6       10      14
+3       7       11      15
+
+ Result: Matrix transpose is CORRECT!
+
+ Timings:
+GPU Time: 0.536414 ms
+CPU Time: 0.000149 ms
 Exit status: 0

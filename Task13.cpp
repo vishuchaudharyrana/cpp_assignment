@@ -1,87 +1,132 @@
-### *CUDA Multi-Threaded Prime Number Finder*
-cpp
+//*CUDA Multi-Threaded Prime Number Finder*
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <cuda_runtime.h>
-
-// CUDA kernel to mark non-prime numbers
-__global__ void markNonPrimes(bool* isPrime, int n) {
-    int index = blockIdx.x * blockDim.x + threadIdx.x; // Compute global thread index
-    if (index < 2) return; // 0 and 1 are not prime numbers
-    if (index * index > n) return; // No need to mark beyond sqrt(n)
-    
-    if (isPrime[index]) { // If index is prime, mark its multiples as non-prime
-        for (int j = index * index; j <= n; j += index) {
-            isPrime[j] = false;
-        }
+#include <thread>
+#include <chrono>
+#include <mutex>
+ 
+#define ENABLE_SEQ    1
+#define ENABLE_THREAD 1
+#define ENABLE_CUDA   0  
+ 
+const int LIMIT = 1000000;  //  Change the limit to test other ranges
+ 
+// ---------------- Sequential Prime Check ----------------
+bool isPrime(int n) {
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (n % 2 == 0) return false;
+    int sqrtn = std::sqrt(n);
+    for (int i = 3; i <= sqrtn; i += 2)
+        if (n % i == 0) return false;
+    return true;
+}
+ 
+// ---------------- Multithreaded Prime Finder ----------------
+std::mutex mtx;
+void findPrimesThreaded(int start, int end, std::vector<int>& primes) {
+    std::vector<int> local;
+    for (int i = start; i <= end; ++i)
+        if (isPrime(i)) local.push_back(i);
+    std::lock_guard<std::mutex> lock(mtx);
+    primes.insert(primes.end(), local.begin(), local.end());
+}
+ 
+#if ENABLE_CUDA
+// ---------------- CUDA Code ----------------
+__device__ bool isPrimeGPU(int n) {
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (n % 2 == 0) return false;
+    int sqrtn = sqrtf((float)n);
+    for (int i = 3; i <= sqrtn; i += 2)
+        if (n % i == 0) return false;
+    return true;
+}
+ 
+__global__ void findPrimesCUDA(int* output, int* count, int N) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < N && isPrimeGPU(idx)) {
+        int pos = atomicAdd(count, 1);
+        output[pos] = idx;
     }
 }
-
-// Function to find prime numbers up to n using CUDA
-std::vector<int> findPrimesCUDA(int n) {
-    bool* d_isPrime;
-    size_t size = (n + 1) * sizeof(bool);
-    cudaMalloc(&d_isPrime, size);
-    cudaMemset(d_isPrime, true, size);
-
-    int blockSize = 256;
-    int numBlocks = (n + blockSize - 1) / blockSize;
-    markNonPrimes<<<numBlocks, blockSize>>>(d_isPrime, n);
-    cudaDeviceSynchronize();
-
-    std::vector<bool> h_isPrime(n + 1);
-    cudaMemcpy(h_isPrime.data(), d_isPrime, size, cudaMemcpyDeviceToHost);
-    cudaFree(d_isPrime);
-
-    std::vector<int> primes;
-    for (int i = 2; i <= n; ++i) {
-        if (h_isPrime[i]) {
-            primes.push_back(i);
-        }
-    }
-    return primes;
-}
-
-// Function to find prime numbers up to n using a sequential approach
-std::vector<int> findPrimesSequential(int n) {
-    std::vector<bool> isPrime(n + 1, true);
-    isPrime[0] = isPrime[1] = false;
-
-    for (int i = 2; i * i <= n; ++i) {
-        if (isPrime[i]) {
-            for (int j = i * i; j <= n; j += i) {
-                isPrime[j] = false;
-            }
-        }
-    }
-
-    std::vector<int> primes;
-    for (int i = 2; i <= n; ++i) {
-        if (isPrime[i]) {
-            primes.push_back(i);
-        }
-    }
-    return primes;
-}
-
+#endif
+ 
 int main() {
-    int n = 1000000;
-
-    // Find primes using CUDA
-    std::vector<int> primesCUDA = findPrimesCUDA(n);
-
-    // Find primes using sequential approach
-    std::vector<int> primesSequential = findPrimesSequential(n);
-
-    // Compare results
-    if (primesCUDA == primesSequential) {
-        std::cout << "Both methods found the same prime numbers up to " << n << std::endl;
-    } else {
-        std::cout << "Mismatch in prime numbers found by CUDA and sequential methods" << std::endl;
+#if ENABLE_SEQ
+    std::cout << "\n[Sequential Version]\n";
+    std::vector<int> primes;
+    auto t1 = std::chrono::high_resolution_clock::now();
+    for (int i = 2; i <= LIMIT; ++i)
+        if (isPrime(i)) primes.push_back(i);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    std::cout << "Found " << primes.size() << " primes in "
+              << std::chrono::duration<double>(t2 - t1).count() << " sec\n";
+#endif
+ 
+#if ENABLE_THREAD
+    std::cout << "\n[Multithreaded Version]\n";
+    int num_threads = std::thread::hardware_concurrency();
+    int chunk = LIMIT / num_threads;
+    std::vector<std::thread> threads;
+    std::vector<int> thread_primes;
+ 
+    auto t3 = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < num_threads; ++i) {
+        int start = i * chunk + (i == 0 ? 2 : 0);
+        int end = (i == num_threads - 1) ? LIMIT : (i + 1) * chunk;
+        threads.emplace_back(findPrimesThreaded, start, end, std::ref(thread_primes));
     }
-
+    for (auto& t : threads) t.join();
+    auto t4 = std::chrono::high_resolution_clock::now();
+    std::cout << "Found " << thread_primes.size() << " primes in "
+              << std::chrono::duration<double>(t4 - t3).count() << " sec\n";
+#endif
+ 
+#if ENABLE_CUDA
+    std::cout << "\n[CUDA Version]\n";
+    int* d_output;
+    int* d_count;
+    int* h_output = new int[LIMIT];
+    int h_count = 0;
+ 
+    cudaMalloc(&d_output, LIMIT * sizeof(int));
+    cudaMalloc(&d_count, sizeof(int));
+    cudaMemset(d_count, 0, sizeof(int));
+ 
+    auto t5 = std::chrono::high_resolution_clock::now();
+    int threads = 256;
+    int blocks = (LIMIT + threads - 1) / threads;
+    findPrimesCUDA<<<blocks, threads>>>(d_output, d_count, LIMIT);
+    cudaDeviceSynchronize();
+    auto t6 = std::chrono::high_resolution_clock::now();
+ 
+    cudaMemcpy(&h_count, d_count, sizeof(int), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_output, d_output, h_count * sizeof(int), cudaMemcpyDeviceToHost);
+ 
+    std::cout << "Found " << h_count << " primes in "
+              << std::chrono::duration<double>(t6 - t5).count() << " sec\n";
+ 
+    delete[] h_output;
+    cudaFree(d_output);
+    cudaFree(d_count);
+#endif
+ 
     return 0;
-}
+
+//-----output-------
+
+Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
+Compiling...
+Executing...
+
+[Sequential Version]
+Found 78498 primes in 0.10254 sec
+
+[Multithreaded Version]
+Found 78498 primes in 0.25256 sec
+Exit status: 0
 
 

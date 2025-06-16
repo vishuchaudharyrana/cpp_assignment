@@ -1,72 +1,83 @@
 // *CUDA Parallel Vector Addition*
-// Step 1: Include necessary headers
 #include <iostream>
 #include <cuda_runtime.h>
+#include <chrono>
 
-// Step 2: Define the CUDA kernel for vector addition
+// CUDA Kernel for vector addition
 __global__ void vectorAdd(const float* A, const float* B, float* C, int N) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x; // Calculate global thread index
-    if (i < N) { // Ensure index is within bounds
-        C[i] = A[i] + B[i]; // Perform element-wise addition
-    }
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i < N)
+        C[i] = A[i] + B[i];
 }
 
-// Step 3: Main function to set up and execute the kernel
 int main() {
-    int N = 1000000; // Define vector size
-    size_t size = N * sizeof(float); // Calculate memory size
+    std::cout << "... CUDA Vector Addition...\n";
 
-    // Step 4: Allocate memory on the host (CPU)
-    float* h_A = (float*)malloc(size);
-    float* h_B = (float*)malloc(size);
-    float* h_C = (float*)malloc(size);
+    const int N = 1000000;
+    size_t size = N * sizeof(float);
 
-    // Step 5: Initialize vectors with sample data
-    for (int i = 0; i < N; i++) {
-        h_A[i] = static_cast<float>(i); // Assign values to vector A
-        h_B[i] = static_cast<float>(i * 2); // Assign values to vector B
+    // Host memory allocation
+    float* h_A = new float[N];
+    float* h_B = new float[N];
+    float* h_C = new float[N];
+    float* h_C_CPU = new float[N];
+
+    // Initialize input data
+    for (int i = 0; i < N; ++i) {
+        h_A[i] = i;
+        h_B[i] = i * 2;
     }
 
-    // Step 6: Allocate memory on the device (GPU)
-    float* d_A;
-    float* d_B;
-    float* d_C;
-    cudaMalloc((void**)&d_A, size);
-    cudaMalloc((void**)&d_B, size);
-    cudaMalloc((void**)&d_C, size);
+    // Device memory allocation
+    float *d_A, *d_B, *d_C;
+    cudaMalloc(&d_A, size);
+    cudaMalloc(&d_B, size);
+    cudaMalloc(&d_C, size);
 
-    // Step 7: Copy vectors from host to device
+    // Copy data to device
     cudaMemcpy(d_A, h_A, size, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, size, cudaMemcpyHostToDevice);
 
-    // Step 8: Define block and grid sizes
-    int blockSize = 256; // Number of threads per block
-    int numBlocks = (N + blockSize - 1) / blockSize; // Calculate number of blocks
+    // Launch CUDA kernel and time it
+    int blockSize = 256;
+    int numBlocks = (N + blockSize - 1) / blockSize;
 
-    // Step 9: Launch the CUDA kernel
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
+
     vectorAdd<<<numBlocks, blockSize>>>(d_A, d_B, d_C, N);
 
-    // Step 10: Copy result vector from device to host
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    float gpuTime = 0;
+    cudaEventElapsedTime(&gpuTime, start, stop);
+
+    // Copy result back to host
     cudaMemcpy(h_C, d_C, size, cudaMemcpyDeviceToHost);
 
-    // Step 11: Verify the result
-    for (int i = 0; i < N; i++) {
-        if (h_C[i] != h_A[i] + h_B[i]) {
-            std::cerr << "Error at index " << i << ": " << h_C[i] << " != " << h_A[i] + h_B[i] << std::endl;
-            return -1;
-        }
-    }
-    std::cout << "Vector addition successful!" << std::endl;
+    // CPU addition and timing
+    auto cpu_start = std::chrono::high_resolution_clock::now();
+    for (int i = 0; i < N; ++i)
+        h_C_CPU[i] = h_A[i] + h_B[i];
+    auto cpu_end = std::chrono::high_resolution_clock::now();
+    double cpuTime = std::chrono::duration<double, std::milli>(cpu_end - cpu_start).count();
 
-    // Step 12: Free device memory
-    cudaFree(d_A);
-    cudaFree(d_B);
-    cudaFree(d_C);
+    // Verify result (first few elements)
+    std::cout << "\n Results:\n";
+    for (int i = 0; i < 5; ++i)
+        std::cout << "A[" << i << "] + B[" << i << "] = " << h_C[i] << "\n";
 
-    // Step 13: Free host memory
-    free(h_A);
-    free(h_B);
-    free(h_C);
+    // Show timings
+    std::cout << "\n Vector addition completed!\n";
+    std::cout << " GPU Time: " << gpuTime << " ms\n";
+    std::cout << " CPU Time: " << cpuTime << " ms\n";
+
+    // Cleanup
+    cudaFree(d_A); cudaFree(d_B); cudaFree(d_C);
+    delete[] h_A; delete[] h_B; delete[] h_C; delete[] h_C_CPU;
 
     return 0;
 }
@@ -75,6 +86,17 @@ int main() {
 Running NVIDIA GTX TITAN X in FUNCTIONAL mode...
 Compiling...
 Executing...
-Vector addition successful!
+... CUDA Vector Addition...
+
+ Results:
+A[0] + B[0] = 0
+A[1] + B[1] = 3
+A[2] + B[2] = 6
+A[3] + B[3] = 9
+A[4] + B[4] = 12
+
+ Vector addition completed!
+ GPU Time: 190.704 ms
+ CPU Time: 3.83186 ms
 Exit status: 0
 

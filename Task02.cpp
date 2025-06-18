@@ -1,3 +1,9 @@
+/*Task 2: Expression Evaluator 
+Implement a parser and evaluator for arithmetic expressions containing parentheses and standard operators (+, -, *, /).
+Support correct operator precedence and associativity.
+Provide detailed test cases demonstrating correct evaluations.
+*/
+
 #include <iostream>
 #include <stack>
 #include <string>

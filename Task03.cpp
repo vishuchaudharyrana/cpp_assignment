@@ -1,3 +1,9 @@
+/*Task number 3 advance thread pool with the task scheduling. 
+ Design a thread pool supporting priority-based task scheduling dependencies between task and error propagation.
+ Use standard priority queue, standard condition variable, and standard future effectively. 
+ demonstrate with example carrier showing task group priorities, dependency, and exception handling.
+*/
+
 #include <iostream>
 #include <list>
 using namespace std;

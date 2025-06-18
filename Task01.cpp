@@ -1,3 +1,10 @@
+/*Task 1: Matrix Multiplication Class 
+ 
+ Implement a templated matrix class supporting efficient multiplication, addition, subtraction, and I/O operations.
+ Overload relevant operators (+, -, *, <<).
+ Clearly demonstrate correctness through comprehensive test cases, including edge cases.
+*/
+
 #include <iostream>
 #include <vector>
 

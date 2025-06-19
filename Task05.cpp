@@ -1,3 +1,10 @@
+/*Task 5: Thread-Safe Lock-Free Smart Pointer
+
+  Implement an atomic, lock-free smart pointer using atomic reference counting without mutexes or locks.
+  Clearly demonstrate correctness and thread safety through rigorous multi-threaded stress tests.
+  Benchmark and compare performance against standard std::shared_ptr.
+*/
+
 #include <iostream>
 #include <atomic>
 #include <thread>

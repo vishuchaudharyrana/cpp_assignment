@@ -1,3 +1,11 @@
+/*Task 4: Efficient Generic Concurrent Merge Sort 
+
+  Create a generic, concurrent merge sort with intelligent parallel execution using templates and lambdas.
+  Implement adaptive thresholding to switch between parallel and sequential sorting.
+  Provide benchmarks clearly comparing sequential versus concurrent implementations with large datasets.
+*/
+
+
 #include <iostream>
 #include <vector>
 #include <future>

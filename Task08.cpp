@@ -1,3 +1,8 @@
+/*Task 8: Numerical Integration
+Can you implement the Trapezoidal Rule and Simpson’s Rule for numerical integration, 
+clearly demonstrate their working by comparing the numerical results with the analytical (exact) solution of an integral?
+*/
+
 #include <iostream>
 #include <cmath>
 

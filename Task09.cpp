@@ -1,3 +1,9 @@
+/*Task 9: Vector Algebra Library
+
+Can you implement a template-based Vector Algebra Library that supports vector addition, scalar multiplication,
+dot product, cross product, and normalization, and include clear example test cases to demonstrate its correctness?
+*/
+
 #include <iostream>
 #include <vector>
 #include <cmath>

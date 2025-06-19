@@ -1,3 +1,10 @@
+/*Task 6: Concurrent Multi-Queue Producer-Consumer with Work-Stealing
+
+  Develop a producer-consumer system featuring multi-queue and efficient work-stealing.
+  Implement advanced synchronization mechanisms like:std::mutex ,std::condition_variable and Efficient queue handling
+  Provide a benchmark and demonstrate Balanced task distribution Improved throughput
+*/
+
 #include <iostream>
 #include <thread>
 #include <queue>

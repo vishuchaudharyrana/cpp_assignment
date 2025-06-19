@@ -1,3 +1,9 @@
+/*Task 7: Polynomial Class and Root Finding
+Can you develop a polynomial class supporting arithmetic operators like addition, subtraction, multiplication, 
+implement a numerical method (Newton-Raphson or Bisection) for finding polynomial roots, 
+demonstrate its correctness with a detailed example?
+*/
+
 #include <iostream>
 #include <vector>
 #include <cmath>

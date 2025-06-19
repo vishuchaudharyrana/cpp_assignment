@@ -53,7 +53,7 @@ void merge_sort(std::vector<T>& data, int left, int right) {
 }
 
 int main() {
-    std::vector<int> data = {8, 4, 5, 3, 7, 2, 6, 1};
+    std::vector<int> data = {12, 8, 9, 3, 11, 5, 4};
 
     merge_sort(data, 0, data.size() - 1);
 
@@ -64,4 +64,4 @@ int main() {
 
 //--------output-------
 
-Sorted: 1 2 3 4 5 6 7 8 
+Sorted:3, 4, 5, 8, 9, 11, 12 
